@@ -72,8 +72,8 @@ public class SensorPanel extends JPanel {
             JLabel sensorLabel = new JLabel(String.format("%s(%s): %s", s.getName(),  s.getSensorType().toString(),(s.getActive() ? "Active" : "Inactive")));
             JButton sensorToggleButton = new JButton((s.getActive() ? "Deactivate" : "Activate"));
             JButton sensorRemoveButton = new JButton("Remove Sensor");
-            s.setActive(!s.getActive());
-            sensorToggleButton.addActionListener(e -> setSensorActivity(s) );
+
+            sensorToggleButton.addActionListener(e -> setSensorActivity(s, !s.getActive()));
             sensorRemoveButton.addActionListener(e -> removeSensor(s));
 
             //hard code some sizes, tsk tsk
@@ -89,9 +89,10 @@ public class SensorPanel extends JPanel {
     /**
      * Asks the securityService to change a sensor activation status and then rebuilds the current sensor list
      * @param sensor The sensor to update
+     * @param isActive The sensor's activation status
      */
-    private void setSensorActivity(Sensor sensor) {
-        securityService.changeSensorActivationStatus(sensor);
+    private void setSensorActivity(Sensor sensor, Boolean isActive) {
+        securityService.changeSensorActivationStatus(sensor, isActive);
         updateSensorList(sensorListPanel);
     }
 
