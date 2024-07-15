@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyFloat;
@@ -64,11 +63,11 @@ public class SecurityServiceTest {
      *               not
      * @return a set of sensors with the specified properties
      */
-    private Set<Sensor> getSensors(boolean active) {
+    private Set<Sensor> getSensors(boolean active, int number) {
         // Helper method to generate a set of sensors
         String randomString = UUID.randomUUID().toString();
         Set<Sensor> sensors = new HashSet<>();
-        IntStream.range(0, 3)
+        IntStream.range(0, number)
                 .forEach(i -> {
                     Sensor sensor = new Sensor(randomString + "_" + i, SensorType.DOOR);
                     sensor.setActive(active);
@@ -100,6 +99,8 @@ public class SecurityServiceTest {
     void test02() {
         when(securityRepository.getArmingStatus()).thenReturn(ArmingStatus.ARMED_HOME);
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
+        when(securityRepository.getSensors()).thenReturn(getSensors(true, 3));
+
         securityService.changeSensorActivationStatus(sensor, true);
 
         verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.ALARM);
@@ -112,8 +113,9 @@ public class SecurityServiceTest {
     @Test
     void test03() {
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
-        sensor.setActive(false);
-        securityService.changeSensorActivationStatus(sensor);
+        when(securityRepository.getSensors()).thenReturn(getSensors(false, 3));
+        sensor.setActive(true);
+        securityService.changeSensorActivationStatus(sensor, false);
 
         verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.NO_ALARM);
     }
@@ -140,7 +142,7 @@ public class SecurityServiceTest {
     @Test
     void test05() {
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
-        sensor.setActive(true);
+        when(securityRepository.getSensors()).thenReturn(getSensors(true, 3));
         securityService.changeSensorActivationStatus(sensor, true);
 
         verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.ALARM);
@@ -156,7 +158,9 @@ public class SecurityServiceTest {
     @EnumSource(value = AlarmStatus.class, names = { "NO_ALARM", "PENDING_ALARM", "ALARM" })
     void test06(AlarmStatus status) {
         when(securityRepository.getAlarmStatus()).thenReturn(status);
-        sensor.setActive(false);
+        Set<Sensor> sensors = getSensors(true, 1);
+        sensors.forEach(item ->  securityService.addSensor(item));
+
         securityService.changeSensorActivationStatus(sensor, false);
 
         verify(securityRepository, never()).setAlarmStatus(any(AlarmStatus.class));
@@ -182,7 +186,7 @@ public class SecurityServiceTest {
      */
     @Test
     void test08() {
-        Set<Sensor> sensors = getSensors(false);
+        Set<Sensor> sensors = getSensors(false,3);
         when(securityRepository.getSensors()).thenReturn(sensors);
         when(imageService.imageContainsCat(any(), ArgumentMatchers.anyFloat())).thenReturn(false);
         securityService.processImage(mock(BufferedImage.class));
@@ -208,7 +212,7 @@ public class SecurityServiceTest {
     @ParameterizedTest
     @EnumSource(value = ArmingStatus.class, names = { "ARMED_HOME", "ARMED_AWAY" })
     void test10(ArmingStatus status) {
-        Set<Sensor> sensors = getSensors(true);
+        Set<Sensor> sensors = getSensors(true, 3);
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
         when(securityRepository.getSensors()).thenReturn(sensors);
         securityService.setArmingStatus(status);
