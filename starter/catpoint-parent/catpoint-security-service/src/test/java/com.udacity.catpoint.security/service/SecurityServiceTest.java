@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyFloat;
@@ -232,5 +233,67 @@ public class SecurityServiceTest {
         securityService.processImage(image);
 
         verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.ALARM);
+    }
+
+    @Test
+    void test12() {
+        when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.ALARM);
+        when(securityRepository.getArmingStatus()).thenReturn(ArmingStatus.DISARMED);
+        securityService.changeSensorActivationStatus(sensor, true);
+
+        verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.PENDING_ALARM);
+    }
+
+    /**
+     * Test the add, get, and remove operations for sensors.
+     *
+     * This test creates a set of test sensors using the `createTestSensors` method.
+     * It then iterates over each sensor and calls the `addRemoveSensor` method.
+     * The `addRemoveSensor` method adds the sensor, retrieves the sensors, and removes the sensor.
+     *
+     * This test is designed to ensure that the add, get, and remove operations for sensors
+     * work correctly without throwing any exceptions.
+     *
+     * @throws Exception if any exception occurs during the execution of the test
+     */
+    @Test
+    public void testAddGetRemoveSensors() {
+        Set<Sensor> testSensors = createTestSensors();
+        assertDoesNotThrow(() -> {
+            for (Sensor sensor : testSensors) {
+                addRemoveSensor(sensor);
+            }
+        });
+    }
+
+    @Test
+    public void notThrowExceptionAddGetRemoveListeners() {
+        assertDoesNotThrow(() -> {
+            securityService.addStatusListener(statusListener);
+            securityService.removeStatusListener(statusListener);
+        });
+    }
+
+
+
+    /**
+     * Test that adding and removing a status listener does not throw an exception.
+     *
+     * This test case verifies that the `addStatusListener` and `removeStatusListener` methods of the `securityService` object do not throw any exceptions when called with a valid `statusListener` parameter.
+     *
+     * @throws AssertionError if an exception is thrown during the execution of the test case
+     */
+    private Set<Sensor> createTestSensors() {
+        Set<Sensor> sensors = new HashSet<>();
+        sensors.add(new Sensor("window", SensorType.WINDOW));
+        sensors.add(new Sensor("motion", SensorType.MOTION));
+        sensors.add(new Sensor("door", SensorType.DOOR));
+        return sensors;
+    }
+
+    private void addRemoveSensor(Sensor sensor) {
+        securityService.addSensor(sensor);
+        securityService.getSensors();
+        securityService.removeSensor(sensor);
     }
 }
